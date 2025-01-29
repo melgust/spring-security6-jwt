@@ -37,7 +37,7 @@ VALUES(1, 'UMG001', '2024-08-31 09:04:29.000', 0, 'Administrator', 1, 1, NULL, 0
 1. Run project
 2. Add the public path in WebSecuritConfig.java (securityFilterChain function below login path) to create a user
 .requestMatchers("/user/register").permitAll()
-3. Comment @PreAuthorize("hasRole('A001')") in TcUserController, function register
+3. Comment @PreAuthorize("hasRole('UMG001')") in TcUserController, function register
 4. Create a user with method post and URL http://localhost:8080/user/register (for localhost)
 ```json
 {

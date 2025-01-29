@@ -58,7 +58,7 @@ public class TcUserController {
 		}
 	}
 
-	@PreAuthorize("hasRole('A001')")
+	@PreAuthorize("hasRole('UMG001')")
 	@PostMapping("/register")
 	public ResponseEntity<?> register(@Valid @RequestBody TcUserDto tcUserDto) {
 		try {
@@ -105,7 +105,7 @@ public class TcUserController {
 		}
 	}
 
-	@PreAuthorize("hasRole('A001')")
+	@PreAuthorize("hasRole('UMG001')")
 	@GetMapping("/all/active")
 	public ResponseEntity<?> getAllActive() {		
 		try {
@@ -116,7 +116,7 @@ public class TcUserController {
 		}
 	}
 
-	@PreAuthorize("hasRole('A001')")
+	@PreAuthorize("hasRole('UMG001')")
 	@GetMapping("/all/picture")
 	public ResponseEntity<?> getAllWithPicture(Authentication authentication, HttpServletRequest request,
 			@RequestParam(required = false) Map<String, String> qparams) {
@@ -130,7 +130,7 @@ public class TcUserController {
 		}
 	}
 	
-	@PreAuthorize("hasRole('A001')")
+	@PreAuthorize("hasRole('UMG001')")
 	@DeleteMapping("/{userId}")
 	public ResponseEntity<?> deleteUser(Authentication authentication, HttpServletRequest request,
 			@PathVariable(value = "userId") Long userId) {
