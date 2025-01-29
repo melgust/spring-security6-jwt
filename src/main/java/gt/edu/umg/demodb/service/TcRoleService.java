@@ -1,5 +1,6 @@
 package gt.edu.umg.demodb.service;
 
+import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import gt.edu.umg.demodb.dto.TcRoleDto;
 import gt.edu.umg.demodb.model.TcRole;
 import gt.edu.umg.demodb.repository.TcRoleRepository;
 import gt.edu.umg.demodb.utils.ApiResponse;
@@ -26,22 +28,26 @@ public class TcRoleService {
 	@Autowired
 	ErrorManagerService errorManagerService;
 
-	public ApiResponse setRole(Long userId, TcRole tcRole) {
+	@Autowired
+	MapperService mapperService;
+
+	public ApiResponse setRole(Long userId, TcRoleDto tcRoleDto) throws ParseException {
 		ApiResponse apiResponse;
+		TcRole tcRole = mapperService.convertToTcRole(tcRoleDto);
 		tcRole.setCreatedBy(userId);
-		tcRoleRepository.save(tcRole);
+		tcRole = tcRoleRepository.save(tcRole);
 		apiResponse = new ApiResponse(ResponseResult.success.getValue(), ResponseResult.success.getMessage(), null);
 		return apiResponse;
 	}
 
-	public ApiResponse updRole(Long roleTokenId, Long roleId, TcRole tcRoleIn) {
+	public ApiResponse updRole(Long roleTokenId, Long roleId, TcRoleDto tcRoleDtoIn) {
 		Optional<TcRole> tcRoleOptional = tcRoleRepository.findById(roleId);
 		if (tcRoleOptional.isEmpty()) {
 			return new ApiResponse(ResponseResult.fail.getValue(), "Registro no encontrado", null);
 		}
 		TcRole tcRole = tcRoleOptional.get();
-		tcRole.setStatusId(tcRoleIn.getStatusId());
-		tcRole.setRoleDesc(tcRoleIn.getRoleDesc());
+		tcRole.setStatusId(tcRoleDtoIn.getStatusId());
+		tcRole.setRoleDesc(tcRoleDtoIn.getRoleDesc());
 		tcRole.setUpdatedBy(roleTokenId);
 		tcRole.setUpdatedAt(new Date());
 		tcRoleRepository.save(tcRole);
@@ -53,7 +59,8 @@ public class TcRoleService {
 		if (tcRoleOptional.isEmpty()) {
 			return new ApiResponse(ResponseResult.fail.getValue(), "Registro no encontrado", null);
 		}
-		return new ApiResponse(ResponseResult.success.getValue(), "Datos cargados", tcRoleOptional.get());
+		return new ApiResponse(ResponseResult.success.getValue(), "Datos cargados",
+				mapperService.convertToTcRoleDto(tcRoleOptional.get()));
 	}
 
 	public ApiResponse getAll(String filter, Pageable paging) {
@@ -62,21 +69,21 @@ public class TcRoleService {
 		Page<TcRole> pagedResult = null;
 		if (filter.isEmpty()) {
 			if (paging == null) {
-				response.put("data", tcRoleRepository.findAll());
+				response.put("data", mapperService.convertToTcRolesDto(tcRoleRepository.findAll()));
 			} else {
 				pagedResult = tcRoleRepository.findAll(paging);
 			}
 		} else {
 			filter = "%" + filter.replaceAll(" ", "%") + "%";
 			if (paging == null) {
-				response.put("data", tcRoleRepository.findAllByRoleDescLike(filter));
+				response.put("data", mapperService.convertToTcRolesDto(tcRoleRepository.findAllByRoleDescLike(filter)));
 			} else {
 				pagedResult = tcRoleRepository.findAllByRoleDescLike(filter, paging);
 			}
 		}
 
 		if (paging != null) {
-			response.put("data", pagedResult.getContent());
+			response.put("data", mapperService.convertToTcRolesDto(pagedResult.getContent()));
 			response.put("currentPage", pagedResult.getNumber());
 			response.put("totalItems", pagedResult.getTotalElements());
 			response.put("totalPages", pagedResult.getTotalPages());
@@ -87,7 +94,8 @@ public class TcRoleService {
 
 	public ApiResponse getAllActive() {
 		List<TcRole> data = tcRoleRepository.findAllByStatusId(RegisterStatus.active.getValue());
-		return new ApiResponse(ResponseResult.success.getValue(), "Datos cargados", data);
+		return new ApiResponse(ResponseResult.success.getValue(), "Datos cargados",
+				mapperService.convertToTcRolesDto(data));
 	}
 
 }

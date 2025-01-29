@@ -32,8 +32,6 @@ public class ErrorManagerService {
 			message = message.toLowerCase();
 			if (message.contains("no value present")) {
 				tmpMessage = "Hay incrongruencia con los datos, verifique que todas las pantallas contengan la información completa. Si el error persiste, favor de indicar al administrador del sistema";
-			} else if (e.getMessage().contains("Bad credentials")) {
-				tmpMessage = "El usuario o la clave no son correctas";
 			} else if (message.contains("duplicate key value") || message.contains("llave duplicada")) {
 				tmpMessage = "La información que intenta agregar ya se encuentra registrada, refresque y verifique";
 			}

@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import gt.edu.umg.demodb.dto.TcUserDto;
 import gt.edu.umg.demodb.jwt.JwtProvider;
 import gt.edu.umg.demodb.jwt.User;
-import gt.edu.umg.demodb.model.TcUser;
 import gt.edu.umg.demodb.service.ErrorManagerService;
 import gt.edu.umg.demodb.service.PageableService;
 import gt.edu.umg.demodb.service.TcUserService;
@@ -48,12 +48,10 @@ public class TcUserController {
 	//@PreAuthorize("hasRole('UMG001')")
 	@PostMapping("/add")
 	public ResponseEntity<?> setUser(Authentication authentication, HttpServletRequest request,
-			@Valid @RequestBody TcUser tcUser) {
-		ApiResponse apiResponse;
+			@Valid @RequestBody TcUserDto tcUserDto) {
 		try {
 			//long userId = jwtProvider.getUserIdFromJwt(authentication, request);
-			apiResponse = tcUserService.setUser(tcUser, 0);
-			return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.OK);
+			return tcUserService.setUser(tcUserDto, 0);
 		} catch (Exception e) {
 			return new ResponseEntity<String>(errorManagerService.managerException(e),
 					HttpStatus.INTERNAL_SERVER_ERROR);
@@ -62,26 +60,22 @@ public class TcUserController {
 
 	@PreAuthorize("hasRole('A001')")
 	@PostMapping("/register")
-	public ResponseEntity<?> register(@Valid @RequestBody TcUser tcUser) {
-		ApiResponse apiResponse;
+	public ResponseEntity<?> register(@Valid @RequestBody TcUserDto tcUserDto) {
 		try {
-			apiResponse = tcUserService.setUser(tcUser, 0);
-			return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.OK);
+			return tcUserService.setUser(tcUserDto, 0);
 		} catch (Exception e) {
 			return new ResponseEntity<String>(errorManagerService.managerException(e),
 					HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
-	@PreAuthorize("hasRole('A001')")
+	@PreAuthorize("hasRole('UMG001')")
 	@PutMapping("/{userId}")
 	public ResponseEntity<?> updUser(Authentication authentication, HttpServletRequest request,
-			@PathVariable(value = "userId") Long userId, @Valid @RequestBody TcUser tcUser) {
-		ApiResponse apiResponse;
+			@PathVariable(value = "userId") Long userId, @Valid @RequestBody TcUserDto tcUserDto) {
 		try {
 			long userTokenId = jwtProvider.getUserIdFromJwt(authentication, request);
-			apiResponse = tcUserService.updateUser(userTokenId, userId, tcUser);
-			return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.OK);
+			return tcUserService.updateUser(userTokenId, userId, tcUserDto);			
 		} catch (Exception e) {
 			return new ResponseEntity<String>(errorManagerService.managerException(e),
 					HttpStatus.INTERNAL_SERVER_ERROR);
@@ -89,11 +83,9 @@ public class TcUserController {
 	}
 
 	@GetMapping("/{userId}")
-	public ResponseEntity<?> getUserById(@PathVariable(value = "userId") Long userId) {
-		ApiResponse apiResponse;
+	public ResponseEntity<?> getUserById(@PathVariable(value = "userId") Long userId) {		
 		try {
-			apiResponse = tcUserService.getUserById(userId);
-			return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.OK);
+			return tcUserService.getUserById(userId);
 		} catch (Exception e) {
 			return new ResponseEntity<String>(errorManagerService.managerException(e),
 					HttpStatus.INTERNAL_SERVER_ERROR);
@@ -102,13 +94,11 @@ public class TcUserController {
 
 	@GetMapping("/all")
 	public ResponseEntity<?> getAll(Authentication authentication, HttpServletRequest request,
-			@RequestParam(required = false) Map<String, String> qparams) {
-		ApiResponse apiResponse;
+			@RequestParam(required = false) Map<String, String> qparams) {		
 		try {
 			Pageable paging = pageableService.getPagination(qparams, "userId");
 			String filter = pageableService.getFilter();
-			apiResponse = tcUserService.getAll(filter, paging, false);
-			return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.OK);
+			return tcUserService.getAll(filter, paging, false);
 		} catch (Exception e) {
 			return new ResponseEntity<String>(errorManagerService.managerException(e),
 					HttpStatus.INTERNAL_SERVER_ERROR);
@@ -117,11 +107,9 @@ public class TcUserController {
 
 	@PreAuthorize("hasRole('A001')")
 	@GetMapping("/all/active")
-	public ResponseEntity<?> getAllActive() {
-		ApiResponse apiResponse;
+	public ResponseEntity<?> getAllActive() {		
 		try {
-			apiResponse = tcUserService.getAllActive();
-			return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.OK);
+			return tcUserService.getAllActive();
 		} catch (Exception e) {
 			return new ResponseEntity<String>(errorManagerService.managerException(e),
 					HttpStatus.INTERNAL_SERVER_ERROR);
@@ -132,12 +120,10 @@ public class TcUserController {
 	@GetMapping("/all/picture")
 	public ResponseEntity<?> getAllWithPicture(Authentication authentication, HttpServletRequest request,
 			@RequestParam(required = false) Map<String, String> qparams) {
-		ApiResponse apiResponse;
 		try {
 			Pageable paging = pageableService.getPagination(qparams, "userId");
 			String filter = pageableService.getFilter();
-			apiResponse = tcUserService.getAll(filter, paging, true);
-			return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.OK);
+			return tcUserService.getAll(filter, paging, true);
 		} catch (Exception e) {
 			return new ResponseEntity<String>(errorManagerService.managerException(e),
 					HttpStatus.INTERNAL_SERVER_ERROR);
@@ -148,11 +134,9 @@ public class TcUserController {
 	@DeleteMapping("/{userId}")
 	public ResponseEntity<?> deleteUser(Authentication authentication, HttpServletRequest request,
 			@PathVariable(value = "userId") Long userId) {
-		ApiResponse apiResponse;
 		try {
 			long userTokenId = jwtProvider.getUserIdFromJwt(authentication, request);
-			apiResponse = tcUserService.deleteUser(userTokenId, userId);
-			return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.OK);
+			return tcUserService.deleteUser(userTokenId, userId);
 		} catch (Exception e) {
 			return new ResponseEntity<String>(errorManagerService.managerException(e),
 					HttpStatus.INTERNAL_SERVER_ERROR);
@@ -161,13 +145,16 @@ public class TcUserController {
 
 	@PostMapping("/login")
 	public ResponseEntity<?> setUser(@Valid @RequestBody User user) {
-		ApiResponse apiResponse;
 		try {
-			apiResponse = tcUserService.loginUser(user);
-			return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.OK);
+			return tcUserService.loginUser(user);
 		} catch (Exception e) {
-			return new ResponseEntity<String>(errorManagerService.managerException(e),
-					HttpStatus.INTERNAL_SERVER_ERROR);
+			if (e.getMessage().contains("Bad credentials")) {
+				return new ResponseEntity<String>("El usuario o la clave no son correctas",
+						HttpStatus.UNAUTHORIZED);
+			} else {
+				return new ResponseEntity<String>(errorManagerService.managerException(e),
+						HttpStatus.INTERNAL_SERVER_ERROR);
+			}
 		}
 	}
 

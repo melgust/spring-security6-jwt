@@ -40,7 +40,7 @@ public class DemodbApplication {
 		return new WebMvcConfigurer() {
 			@Override
 			public void addCorsMappings(CorsRegistry registry) {
-				registry.addMapping("/**").allowedOriginPatterns("*")
+				registry.addMapping("/**").allowedOrigins("*")
 				.allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
 				.allowedHeaders("authorization", "content-type", "x-auth-token")
 				.exposedHeaders("x-auth-token");

@@ -34,11 +34,12 @@ public class JwtProvider {
 	public String generateJwtToken(Authentication authentication, String key) {
 		UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
 		Date expiration = getDateExpiration(this.jwtExpiration);
+		key = encryptService.encrypt(key);
         return Jwts.builder().subject(userPrinciple.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(expiration)
                 .issuer("http://demoumg.com")
-                .claim("scopes", userPrinciple.getAuthorities()).claim("loginKey", key)
+                .claim("roles", userPrinciple.getAuthorities()).claim("loginKey", key)
                 .signWith(getSecretKey(), Jwts.SIG.HS512)
                 .compact();
     }

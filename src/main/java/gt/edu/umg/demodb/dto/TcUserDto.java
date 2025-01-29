@@ -3,7 +3,6 @@ package gt.edu.umg.demodb.dto;
 import java.util.Date;
 
 import gt.edu.umg.demodb.model.TcIdentificationDocument;
-import gt.edu.umg.demodb.model.TcRole;
 
 public class TcUserDto {
 
@@ -14,7 +13,7 @@ public class TcUserDto {
 	private long documentNumber;
 	private Date birthday;
 	private TcIdentificationDocument tcIdentificationDocument;
-	private TcRole tcRole;
+	private TcRoleDto tcRole;
 	private String password;
 	private byte statusId = 1;
 	private Date createdAt;
@@ -81,11 +80,11 @@ public class TcUserDto {
 		this.tcIdentificationDocument = tcIdentificationDocument;
 	}
 
-	public TcRole getTcRole() {
+	public TcRoleDto getTcRole() {
 		return tcRole;
 	}
 
-	public void setTcRole(TcRole tcRole) {
+	public void setTcRole(TcRoleDto tcRole) {
 		this.tcRole = tcRole;
 	}
 

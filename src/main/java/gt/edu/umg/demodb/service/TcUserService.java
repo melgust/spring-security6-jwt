@@ -1,5 +1,6 @@
 package gt.edu.umg.demodb.service;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
@@ -11,6 +12,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gt.edu.umg.demodb.dto.TcUserDto;
 import gt.edu.umg.demodb.jwt.JwtProvider;
 import gt.edu.umg.demodb.jwt.User;
 import gt.edu.umg.demodb.model.TcUser;
@@ -60,27 +64,31 @@ public class TcUserService {
 	@Autowired
 	PasswordGeneratorService passwordGeneratorService;
 
+	@Autowired
+	MapperService mapperService;
+
 	@Transactional(rollbackFor = { Exception.class })
-	public ApiResponse setUser(TcUser tcUser, long userTokenId) throws Exception {
-		tcUser.setEmail(tcUser.getEmail().trim().toLowerCase());
-		tcUser.setUsername(tcUser.getUsername().trim().toLowerCase());
-		Optional<TcUser> tcUserOptional = tcUserRepository.findByUsername(tcUser.getUsername());
+	public ResponseEntity<?> setUser(TcUserDto tcUserDto, long userTokenId) throws Exception {
+		tcUserDto.setEmail(tcUserDto.getEmail().trim().toLowerCase());
+		tcUserDto.setUsername(tcUserDto.getUsername().trim().toLowerCase());
+		Optional<TcUser> tcUserOptional = tcUserRepository.findByUsername(tcUserDto.getUsername());
 		if (!tcUserOptional.isEmpty()) {
-			return new ApiResponse(ResponseResult.fail.getValue(), "El usuario ya existe, favor de verificar", null);
+			return new ResponseEntity<String>("El usuario ya existe, favor de verificar", HttpStatus.BAD_REQUEST);
 		}
-		tcUserOptional = tcUserRepository.findByEmail(tcUser.getEmail());
+		tcUserOptional = tcUserRepository.findByEmail(tcUserDto.getEmail());
 		if (!tcUserOptional.isEmpty()) {
-			return new ApiResponse(ResponseResult.fail.getValue(), "El correo electrónico ya se encuentra registrado",
-					null);
+			return new ResponseEntity<String>("El correo electrónico ya se encuentra registrado",
+					HttpStatus.BAD_REQUEST);
 		}
-		tcUserOptional = tcUserRepository.findByDocumentNumber(tcUser.getDocumentNumber());
+		tcUserOptional = tcUserRepository.findByDocumentNumber(tcUserDto.getDocumentNumber());
 		if (!tcUserOptional.isEmpty()) {
-			return new ApiResponse(ResponseResult.fail.getValue(), "El número de documento ya se encuentra registrado",
-					null);
+			return new ResponseEntity<String>("El número de documento ya se encuentra registrado",
+					HttpStatus.BAD_REQUEST);
 		}
 		String password = passwordGeneratorService.generatePassword(8, KeyDictionary.STRONG);
-		tcUser.setPassword(passwordEncoder.encode(password));
-		tcUser.setStatusId(RegisterStatus.active.getValue());
+		tcUserDto.setPassword(passwordEncoder.encode(password));
+		tcUserDto.setStatusId(RegisterStatus.active.getValue());
+		TcUser tcUser = mapperService.convertToTcUser(tcUserDto);
 		tcUser = tcUserRepository.save(tcUser);
 		List<ObjParameter> parameters = new ArrayList<>();
 		ObjParameter objParameter = new ObjParameter();
@@ -98,101 +106,102 @@ public class TcUserService {
 		parameters.add(objParameter);
 		try {
 			mailService.sendEmail(tcUser.getEmail(), "mcalic1@miumg.edu.gt", "register", parameters);
-			return new ApiResponse(ResponseResult.success.getValue(),
-					"Usuario creado exitosamente, confirme su solicitud a través del correo enviado", password);
+			return new ResponseEntity<ApiResponse>(
+					new ApiResponse(ResponseResult.success.getValue(),
+							"Usuario creado exitosamente, confirme su solicitud a través del correo enviado", password),
+					HttpStatus.OK);
 		} catch (Exception e) {
-			return new ApiResponse(ResponseResult.success.getValue(),
+			return new ResponseEntity<ApiResponse>(new ApiResponse(ResponseResult.success.getValue(),
 					"No fue posible enviar el correo de notificación, comuníquese con el administrador del sistema",
-					password);
+					password), HttpStatus.OK);
 		}
 	}
 
-	public ApiResponse updateUser(Long userTokenId, Long userId, TcUser tcUserIn) {
+	public ResponseEntity<?> updateUser(Long userTokenId, Long userId, TcUserDto tcUserDtoIn) throws ParseException {
 		Optional<TcUser> tcUserOptional = tcUserRepository.findById(userId);
 		if (tcUserOptional.isEmpty()) {
-			return new ApiResponse(ResponseResult.fail.getValue(), "Registro no encontrado", null);
+			return new ResponseEntity<String>("Registro no encontrado", HttpStatus.BAD_REQUEST);
 		}
 		TcUser tcUser = tcUserOptional.get();
 		tcUser.setUpdatedBy(userTokenId);
 		tcUser.setUpdatedAt(new Date());
-		if (tcUserIn.getPhoto() != null) {
-			tcUser.setPhoto(tcUserIn.getPhoto());
+		if (tcUserDtoIn.getPhoto() != null) {
+			tcUser.setPhoto(tcUserDtoIn.getPhoto());
 		}
-		tcUser.setEmail(tcUserIn.getEmail());
-		tcUser.setBirthday(tcUserIn.getBirthday());
+		tcUser.setEmail(tcUserDtoIn.getEmail());
+		tcUser.setBirthday(tcUserDtoIn.getBirthday());
 		tcUser.setDocumentNumber(tcUser.getDocumentNumber());
-		tcUser.setFullname(tcUserIn.getFullname());
-		tcUser.setPhone(tcUserIn.getPhone());
-		if (tcUserIn.getTcRole() != null) {
-			tcUser.setTcRole(tcUserIn.getTcRole());
+		tcUser.setFullname(tcUserDtoIn.getFullname());
+		tcUser.setPhone(tcUserDtoIn.getPhone());
+		if (tcUserDtoIn.getTcRole() != null) {
+			tcUser.setTcRole(mapperService.convertToTcRole(tcUserDtoIn.getTcRole()));
 		}
 		tcUserRepository.save(tcUser);
-		return new ApiResponse(ResponseResult.success.getValue(), ResponseResult.success.getMessage(), null);
+		return new ResponseEntity<String>(ResponseResult.success.getMessage(), HttpStatus.OK);
 	}
 
-	public ApiResponse getUserById(Long userId) {
+	public ResponseEntity<?> getUserById(Long userId) {
 		Optional<TcUser> tcUserOptional = tcUserRepository.findById(userId);
 		if (tcUserOptional.isEmpty()) {
-			return new ApiResponse(ResponseResult.fail.getValue(), "Registro no encontrado", null);
+			return new ResponseEntity<String>("Registro no encontrado", HttpStatus.BAD_REQUEST);
 		}
 		TcUser tcUser = tcUserOptional.get();
-		tcUser.setPhoto(tcUser.getPhoto());
-		return new ApiResponse(ResponseResult.success.getValue(), "Datos cargados", tcUser);
+		TcUserDto tcUserDto = mapperService.convertToTcUserDto(tcUser);
+		tcUserDto.setPhoto(tcUserDto.getPhoto());
+		return new ResponseEntity<TcUserDto>(tcUserDto, HttpStatus.OK);
 	}
 
-	public ApiResponse getAll(String filter, Pageable paging, boolean withPicture) {
-		ApiResponse apiResponse;
+	public ResponseEntity<?> getAll(String filter, Pageable paging, boolean withPicture) {
 		Map<String, Object> response = new HashMap<>();
 		Page<TcUser> pagedResult = null;
-		List<TcUser> tcUser;
+		List<TcUser> tcUsers;
 		if (filter.isEmpty()) {
 			if (paging == null) {
-				tcUser = tcUserRepository.findAll();
+				tcUsers = tcUserRepository.findAll();
 				if (withPicture) {
-					for (TcUser u : tcUser) {
-						u.setPhoto(u.getPhoto());
+					for (TcUser tcUser : tcUsers) {
+						tcUser.setPhoto(tcUser.getPhoto());
 					}
 				}
-				response.put("data", tcUser);
+				response.put("data", mapperService.convertToTcUsersDto(tcUsers));
 			} else {
 				pagedResult = tcUserRepository.findAll(paging);
 			}
 		} else {
 			filter = "%" + filter.replaceAll(" ", "%") + "%";
 			if (paging == null) {
-				tcUser = tcUserRepository.findAllByFullnameLike(filter);
+				tcUsers = tcUserRepository.findAllByFullnameLike(filter);
 				if (withPicture) {
-					for (TcUser u : tcUser) {
-						u.setPhoto(u.getPhoto());
+					for (TcUser tcUser : tcUsers) {
+						tcUser.setPhoto(tcUser.getPhoto());
 					}
 				}
-				response.put("data", tcUser);
+				response.put("data", mapperService.convertToTcUsersDto(tcUsers));
 			} else {
 				pagedResult = tcUserRepository.findAllByFullnameLike(filter, paging);
 			}
 		}
 		if (paging != null) {
-			tcUser = pagedResult.getContent();
+			tcUsers = pagedResult.getContent();
 			if (withPicture) {
-				for (TcUser u : tcUser) {
-					u.setPhoto(u.getPhoto());
+				for (TcUser tcUser : tcUsers) {
+					tcUser.setPhoto(tcUser.getPhoto());
 				}
 			}
-			response.put("data", tcUser);
+			response.put("data", mapperService.convertToTcUsersDto(tcUsers));
 			response.put("currentPage", pagedResult.getNumber());
 			response.put("totalItems", pagedResult.getTotalElements());
 			response.put("totalPages", pagedResult.getTotalPages());
 		}
-		apiResponse = new ApiResponse(ResponseResult.success.getValue(), "Datos cargados", response);
-		return apiResponse;
+		return new ResponseEntity<Map<String, Object>>(response, HttpStatus.OK);
 	}
 
-	public ApiResponse getAllActive() {
+	public ResponseEntity<?> getAllActive() {
 		List<TcUser> data = tcUserRepository.findAllByStatusId(RegisterStatus.active.getValue());
-		return new ApiResponse(ResponseResult.success.getValue(), "Datos cargados", data);
+		return new ResponseEntity<List<?>>(mapperService.convertToTcUsersDto(data), HttpStatus.OK);
 	}
 
-	public ApiResponse loginUser(User user) {
+	public ResponseEntity<?> loginUser(User user) {
 		byte[] tmpBPass = Base64.getDecoder().decode(user.getPassword());
 		String tmpPass = new String(tmpBPass);
 		Authentication authentication = authenticationManager
@@ -200,12 +209,13 @@ public class TcUserService {
 		Optional<TcUser> tcUserOptional = tcUserRepository.findByUsername(user.getUsername());
 		TcUser tcUser = tcUserOptional.get();
 		if (tcUser.getStatusId() == RegisterStatus.unauthorized.getValue()) {
-			return new ApiResponse(ResponseResult.fail.getValue(),
-					"Su usuario no está autorizado, debe esperar o comuníquese para consultar sobre el proceso", null);
+			return new ResponseEntity<String>(
+					"Su usuario no está autorizado, debe esperar o comuníquese para consultar sobre el proceso",
+					HttpStatus.UNAUTHORIZED);
 		}
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 		String token = jwtProvider.generateJwtToken(authentication, String.valueOf(tcUser.getUserId()));
-		return new ApiResponse(ResponseResult.success.getValue(), "Datos cargados", token);
+		return new ResponseEntity<String>(token, HttpStatus.OK);
 	}
 
 	public ApiResponse sendMailTest() {
@@ -230,16 +240,16 @@ public class TcUserService {
 		}
 	}
 
-	public ApiResponse deleteUser(Long userTokenId, Long userId) {
+	public ResponseEntity<?> deleteUser(Long userTokenId, Long userId) {
 		Optional<TcUser> tcUserOptional = tcUserRepository.findById(userId);
 		if (tcUserOptional.isEmpty()) {
-			return new ApiResponse(ResponseResult.fail.getValue(), "Registro no encontrado", null);
+			return new ResponseEntity<String>("Registro no encontrado", HttpStatus.BAD_REQUEST);
 		}
 		TcUser tcUser = tcUserOptional.get();
 		tcUser.setStatusId(RegisterStatus.disabled.getValue());
 		tcUser.setUpdatedBy(userTokenId);
 		tcUserRepository.save(tcUser);
-		return new ApiResponse(ResponseResult.success.getValue(), ResponseResult.success.getMessage(), null);
+		return new ResponseEntity<String>(ResponseResult.success.getMessage(), HttpStatus.OK);
 	}
 
 }
