@@ -27,7 +27,7 @@ These additional references should also help you:
 * [Gradle Build Scans – insights for your project's build](https://scans.gradle.com#gradle)
 
 ### Initial data
-In TcUserController use @PreAuthorize keyword, you need to insert a register in tc_role with code A001 or change if you want, for this example the SQL is
+In TcUserController use @PreAuthorize keyword, you need to insert a register in tc_role with code UMG001 or change if you want, for this example the SQL is
 
 INSERT INTO tc_role
 (role_id, code, created_at, created_by, role_desc, role_type, status_id, updated_at, updated_by)
